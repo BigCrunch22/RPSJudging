@@ -37,10 +37,10 @@ public class RPSJudgingScript : MonoBehaviour
 	long RoundNumber = 0;
 	string[] Results = {"Dynamite", "Tornado", "Quicksand", "Pit", "Chain", "Gun", "Law", "Whip", "Sword", "Rock", "Death", "Wall", "Sun", "Camera", "Fire", "Chainsaw", "School", "Scissors", "Poison", "Cage", "Axe", "Peace", "Computer", "Castle", "Snake", "Blood", "Porcupine", "Vulture", "Monkey", "King", "Queen", "Prince", "Princess", "Police", "Woman", "Baby", "Man", "Home", "Train", "Car", "Noise", "Bicycle", "Tree", "Turnip", "Duck", "Wolf", "Cat", "Bird", "Fish", "Spider", "Cockroach", "Brain", "Community", "Cross", "Money", "Vampire", "Sponge", "Church", "Butter", "Book", "Paper", "Cloud", "Airplane", "Moon", "Grass", "Film", "Toilet", "Air", "Planet", "Guitar", "Bowl", "Cup", "Beer", "Rain", "Water", "TV", "Rainbow", "UFO", "Alien", "Prayer", "Mountain", "Satan", "Dragon", "Diamond", "Platinum", "Gold", "Devil", "Fence", "Video Game", "Math", "Robot", "Heart", "Electricity", "Lightning", "Medusa", "Power", "Laser", "Nuke", "Sky", "Tank", "Helicopter"};
 	
-	int ActualStage = 0;
+	long ActualStage = 0;
 	int Team = 0;
 	int RecoverIndex = 0;
-	int MaxStage;
+	long MaxStage, BlueSideWin = 0, BlueSideReduction = 0, RedSideReduction = 0;
 	bool Playable = false;
 	//bool Updatable = false;
 	bool InRecovery = false;
@@ -138,6 +138,8 @@ public class RPSJudgingScript : MonoBehaviour
 	void StartingNumber()
 	{
 		MaxStage = Bomb.GetSolvableModuleNames().Where(a => !IgnoredModules.Contains(a)).Count();
+		BlueSideWin = (long)Math.Round((double)MaxStage * UnityEngine.Random.Range(0.25f,0.75f));
+		RedSideReduction = MaxStage;
 		Playable = true;
 		//Updatable = true;
 		StartCoroutine(Playtime());
@@ -524,10 +526,16 @@ public class RPSJudgingScript : MonoBehaviour
 			else
 			{
 				Audio.PlaySoundAtTransform(MusicMaterial[0].name, transform);
-				for (int a = 0; a < 2; a++)
-				{
-					Cuprum[a] = UnityEngine.Random.Range(0,101);
-				}
+				bool BlueWon = UnityEngine.Random.Range(BlueSideReduction,RedSideReduction) <= BlueSideWin;
+				if (BlueWon)
+					BlueSideReduction++;
+				else
+					RedSideReduction--;
+				
+				
+				Cuprum[0] = UnityEngine.Random.Range(0,101);
+				Cuprum[1] = UnityEngine.Random.Range(0,101) == 0 ? Cuprum[0] : (BlueWon ? ((Cuprum[0] + (UnityEngine.Random.Range(1,51)))%101) : ((Cuprum[0] - (UnityEngine.Random.Range(1,51)) + 101)%101));
+
 				LeftDisplays.Add(Cuprum[0]);
 				RightDisplays.Add(Cuprum[1]);
 
@@ -536,16 +544,6 @@ public class RPSJudgingScript : MonoBehaviour
 				RoundNumber++;
 				Round.text = "Round " + RoundNumber.ToString();
 				
-				bool Chill = false;
-				for (int b = 0; b < 50; b++)
-				{
-					int Suplement = (Cuprum[0] + (b + 1)) % 101;
-					if (Suplement == Cuprum[1])
-					{
-						Chill = true;
-						break;
-					}
-				}
 				
 				Debug.LogFormat("[RPS Judging #{0}] Round {1}: {2} vs {3}", moduleId, RoundNumber.ToString(), Results[Cuprum[0]], Results[Cuprum[1]]);
 				
@@ -554,7 +552,7 @@ public class RPSJudgingScript : MonoBehaviour
 					Debug.LogFormat("[RPS Judging #{0}] Its a draw!", moduleId);
 				}
 				
-				else if (Chill == true)
+				else if (BlueWon)
 				{
 					Score[0]++;
 					Debug.LogFormat("[RPS Judging #{0}] {1} beats {2}. Blue Team gets a point!", moduleId, Results[Cuprum[0]], Results[Cuprum[1]]);
